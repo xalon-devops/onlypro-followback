@@ -1,4 +1,3 @@
-
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
@@ -17,24 +16,47 @@ async function runAutomation() {
     .eq('status', 'connected')
     .limit(1);
 
-  if (error || !sessions.length) return console.log('No valid sessions');
+  if (error || !sessions.length) {
+    console.log('No valid sessions');
+    await supabase.from('followback_logs').insert([{
+      user_id: null,
+      status: 'error',
+      message: 'No valid sessions found'
+    }]);
+    return;
+  }
 
   const session = sessions[0];
   const cookie = JSON.parse(session.cookie_data);
 
-  const browser = await puppeteer.launch({ headless: 'new' });
-  const page = await browser.newPage();
-  await page.setCookie(...cookie);
+  try {
+    const browser = await puppeteer.launch({ headless: 'new' });
+    const page = await browser.newPage();
+    await page.setCookie(...cookie);
 
-  await page.goto('https://onlyfans.com/my/chats/fans', { waitUntil: 'networkidle0' });
+    await page.goto('https://onlyfans.com/my/chats/fans', { waitUntil: 'networkidle0' });
 
-  // Simulate follow clicks — adjust as needed
-  await page.evaluate(() => {
-    document.querySelectorAll('button.follow').forEach(btn => btn.click());
-  });
+    await page.evaluate(() => {
+      document.querySelectorAll('button.follow').forEach(btn => btn.click());
+    });
 
-  await browser.close();
-  console.log('Follow-back run complete ✅');
+    await browser.close();
+    console.log('Follow-back run complete ✅');
+
+    await supabase.from('followback_logs').insert([{
+      user_id: session.user_id || null,
+      status: 'success',
+      message: 'Followed back fans successfully'
+    }]);
+
+  } catch (err) {
+    console.error('Automation error:', err.message);
+    await supabase.from('followback_logs').insert([{
+      user_id: session.user_id || null,
+      status: 'error',
+      message: err.message
+    }]);
+  }
 }
 
 runAutomation();
