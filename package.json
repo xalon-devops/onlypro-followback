@@ -1,0 +1,14 @@
+
+{
+  "name": "onlypro-followback",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.4",
+    "puppeteer-extra": "^4.2.0",
+    "puppeteer-extra-plugin-stealth": "^2.11.1"
+  }
+}
